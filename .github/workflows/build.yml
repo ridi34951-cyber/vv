@@ -1,0 +1,98 @@
+name: Build GyroLock 3.0.42 Debug APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Compile Android Debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install Android SDK components
+        run: |
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0" \
+            "ndk;27.2.12479018" \
+            "cmake;3.22.1"
+
+      - name: Install Vulkan shader compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y glslang-tools
+          glslangValidator --version
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Verify project files
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f settings.gradle
+          test -f build.gradle
+          test -f gradle.properties
+          test -f app/build.gradle
+          test -f app/src/main/AndroidManifest.xml
+          test -f app/src/main/java/com/ridiitols/gyrolock/MainActivity.java
+          test -f app/src/main/cpp/CMakeLists.txt
+          test -f app/src/main/cpp/gyrolock_vulkan.cpp
+          test -f app/src/main/cpp/fullscreen.vert
+          test -f app/src/main/cpp/stabilize.frag
+          java -version
+          gradle --version
+
+      - name: Build Debug APK
+        shell: bash
+        run: gradle --no-daemon --stacktrace --warning-mode all assembleDebug
+
+      - name: Verify APK was generated
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          find app/build/outputs/apk/debug -maxdepth 1 -type f -name '*.apk' -print -quit | grep -q .
+
+      - name: Upload Debug APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: GyroLock-3.0.42-Debug-APK
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload build diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: GyroLock-build-diagnostics
+          path: |
+            **/build/reports/**
+            **/build/outputs/logs/**
+            **/build/tmp/**
+          if-no-files-found: ignore
+          retention-days: 14

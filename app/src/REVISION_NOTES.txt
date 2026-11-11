@@ -1,0 +1,13 @@
+GyroLock 3.0.42 — Direct Shutter, Direct Zoom, Stabilizer Noise Reduction
+
+Changes:
+- Zoom 0.5x / 1x / 2x buttons immediately apply their zoom ratio; no popup menu.
+- Shutter sends the still-capture request immediately instead of waiting for a new AF/AE metering cycle.
+- Removed pre-capture assist-torch pulse from the shutter path.
+- Existing continuous autofocus/exposure remains active. Optional still flash remains controlled by the user's FLASH toggle.
+- Increased gyro noise dead-band and stationary-clip tolerance to reduce residual drift while the phone is held still.
+- Increased EIS correction gain moderately for stronger compensation during real movement.
+
+Validation:
+- ZIP structure/integrity checked.
+- Android compilation and Samsung A16 device testing have not yet been performed.
